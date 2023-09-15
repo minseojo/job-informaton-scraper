@@ -1,0 +1,5 @@
+# 프로젝트 제외 경로
+/programmersJobInformation/.gradle/
+/programmersJobInformation/build/
+/programmersJobInformation/out/
+/programmersJobInformation/out/production/classes/
