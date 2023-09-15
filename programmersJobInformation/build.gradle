@@ -9,8 +9,11 @@ repositories {
     mavenCentral()
 }
 
+
 dependencies {
     implementation group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '4.12.1'
+    // Selenium WebDriver Support 라이브러리 의존성 추가
+    implementation group: 'org.seleniumhq.selenium', name: 'selenium-support', version: '4.12.1'
     // Apache POI 라이브러리 의존성 추가
     implementation group: 'org.apache.poi', name: 'poi', version: '5.0.0'
     implementation group: 'org.apache.poi', name: 'poi-ooxml', version: '5.0.0'
