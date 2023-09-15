@@ -1,8 +1,14 @@
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+
+import java.io.FileOutputStream;
 import java.util.List;
 
 public class JobInformationCrawler {
@@ -27,7 +33,12 @@ public class JobInformationCrawler {
         try {
             long lastPage = findLastPage();
 
-            for (int page = 1; page <= 1; page++) {
+            // 엑셀 워크북 및 시트 생성
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Programmers Job Information");
+            // 헤더 행 생성
+            int rowNum =0;
+            for (int page = 1; page <= lastPage; page++) {
                 url = "https://career.programmers.co.kr/job?page=" + page;
                 driver.get(url);
 
@@ -40,7 +51,21 @@ public class JobInformationCrawler {
                 for (WebElement e : elements) {
                     String information = e.getText();
                     String link = e.findElement(By.className("position-link")).getAttribute("href");
-                    System.out.println(information+ "\n" + link + "\n");
+
+                    Row row = sheet.createRow(rowNum++);
+                    int column = 0;
+                    String type[] = information.split("\n"); //회사명, 지역, 채용분야, 회사링크 등등
+                    for (int i = 0; i < type.length; i++) {
+                        row.createCell(column++).setCellValue(type[i]);
+                    }
+                    row.createCell(6).setCellValue(link);
+                }
+
+                // 엑셀 파일로 저장
+                try (FileOutputStream outputStream = new FileOutputStream("크롤링_데이터.xlsx")) {
+                    workbook.write(outputStream);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
                 Thread.sleep(500); // 페이지 로딩 대기 시간 (10초), 불필요한 시간
             }
