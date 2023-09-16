@@ -10,9 +10,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.List;
-/**
- * 단일 스레드, 80개의 페이지 - 1600개의 정보 -> 70653 밀리초
- */
 public class Crawler {
 
     private final WebDriver driver; // 웹드라이버

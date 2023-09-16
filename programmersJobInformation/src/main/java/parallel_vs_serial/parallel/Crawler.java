@@ -15,18 +15,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+// 출력 주석처리 - 72줄
 public class Crawler {
-    private WebDriver driver;
     private final int numberOfThreads;
+    private static final ChromeOptions options = new ChromeOptions();
 
     public Crawler(String WEB_DRIVER_ID, String WEB_DRIVER_PATH, int numberOfThreads) {
         System.setProperty(WEB_DRIVER_ID, WEB_DRIVER_PATH);
-        ChromeOptions options = new ChromeOptions();
+        this.numberOfThreads = numberOfThreads;
         options.addArguments("headless");
         options.addArguments("--start-maximized");
-        driver = new ChromeDriver(options);
-        this.numberOfThreads = numberOfThreads;
-        this.exe();
     }
 
     public void exe() {
@@ -34,10 +32,11 @@ public class Crawler {
         try {
             ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 
-            for (int thread = 0; thread < 4; thread++) {
+            for (int thread = 0; thread < numberOfThreads; thread++) {
                 final int currentThread = thread;
                 Callable<Void> task = () -> {
-                    crawlPage(currentThread);
+                    WebDriver driver = new ChromeDriver(options);
+                    crawlPage(currentThread, driver);
                     return null;
                 };
                 executorService.submit(task);
@@ -48,20 +47,18 @@ public class Crawler {
         } catch (Exception error) {
             error.printStackTrace();
         } finally {
-            driver.close();
             long endTime = System.currentTimeMillis();
             long elapsedTimeMillis = endTime - startTime;
             System.out.println("경과 시간 (밀리초): " + elapsedTimeMillis);
         }
     }
 
-    private void crawlPage(int threadNum) {
+    private void crawlPage(int threadNum, WebDriver driver) {
         try {
             int lastPage = 80; // 병렬 직렬 80 페이지로 비교
-            int totalPage = lastPage / numberOfThreads;
-            int startPage = threadNum * totalPage;
-            int endPage = (threadNum + 1) * totalPage;
-
+            int totalPage = lastPage / numberOfThreads; // 각 스레드가 담당할 전체 페이지 (마지막 페이지/ 스레드개수)
+            int startPage = threadNum * totalPage; // 시작 페이지 = 전체 페이지 * 스레드 번호
+            int endPage = (threadNum + 1) * totalPage; // 마지막 페이지
             for (int page = startPage; page < endPage; page++) {
                 String url = "https://career.programmers.co.kr/job?page=" + page;
                 driver.get(url);
@@ -78,6 +75,8 @@ public class Crawler {
 
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            driver.quit();
         }
     }
 }
