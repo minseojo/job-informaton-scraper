@@ -5,6 +5,7 @@ public class Main {
         String WEB_DRIVER_ID = "webdriver.chrome.driver";
         String WEB_DRIVER_PATH = "/Users/minseojo/Desktop/chromedriver-mac-arm64/chromedriver";
         int numberOfThreads = Runtime.getRuntime().availableProcessors();
-        new Crawler(WEB_DRIVER_ID, WEB_DRIVER_PATH, numberOfThreads);
+        Crawler crawler = new Crawler(WEB_DRIVER_ID, WEB_DRIVER_PATH, numberOfThreads);
+        crawler.exe();
     }
 }
