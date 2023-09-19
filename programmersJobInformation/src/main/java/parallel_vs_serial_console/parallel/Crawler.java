@@ -1,4 +1,4 @@
-package parallel_vs_serial.parallel;
+package parallel_vs_serial_console.parallel;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-// 출력 주석처리 - 72줄
+// 출력 주석처리 - 72줄 (시간을 줄이기 위해 - 보려면 주석 없애기)
 public class Crawler {
     private final int numberOfThreads;
     private static final ChromeOptions options = new ChromeOptions();

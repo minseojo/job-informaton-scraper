@@ -1,4 +1,4 @@
-package parallel_vs_serial.serial;
+package parallel_vs_serial_console.serial;
 /**
  * 직렬 처리 (밀리초)
  * 80개의 페이지, 1600개의 정보

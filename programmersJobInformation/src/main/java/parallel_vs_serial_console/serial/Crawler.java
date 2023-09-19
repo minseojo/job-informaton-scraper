@@ -1,4 +1,4 @@
-package parallel_vs_serial.serial;
+package parallel_vs_serial_console.serial;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -10,6 +10,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.List;
+// 출력 주석처리 - 72줄 (시간을 줄이기 위해 - 보려면 주석 없애기)
 public class Crawler {
 
     private final WebDriver driver; // 웹드라이버
