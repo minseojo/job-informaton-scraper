@@ -82,7 +82,7 @@ public class Crawler {
         }
     }
 
-    private int findLastPage() throws InterruptedException {
+    private int findLastPage() {
         String url = "https://career.programmers.co.kr/job";
         WebDriver driver = new ChromeDriver(options);
         driver.get(url);
@@ -101,3 +101,4 @@ public class Crawler {
         return lastPage; //한 페이지당 20개
     }
 }
+
