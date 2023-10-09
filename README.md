@@ -5,3 +5,6 @@
 # 크롤링 시간 단축
 ![image](https://github.com/minseojo/job-informaton-crawling/assets/64322765/7c30182a-fdd8-403c-81cb-ac4d4850a622)
 하지만 하드웨어, 네트워크 상황, 프로그래머스 채용 정보 서버 상황에 따라 차이가 날 수 있다.
+
+# 결과
+![image](https://github.com/minseojo/job-informaton-crawling/assets/64322765/ee816ff9-2606-419e-8e00-ea9ec6c0b249)
