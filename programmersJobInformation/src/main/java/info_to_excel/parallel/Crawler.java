@@ -4,16 +4,14 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.FileOutputStream;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -22,34 +20,35 @@ import java.util.concurrent.TimeUnit;
 
 public class Crawler {
     private final int numberOfThreads;
-    private static final ChromeOptions options = new ChromeOptions();
+    private final List<ThreadRole> threadRoles;
 
-    public Crawler(String WEB_DRIVER_ID, String WEB_DRIVER_PATH, int numberOfThreads) {
-        System.setProperty(WEB_DRIVER_ID, WEB_DRIVER_PATH);
+    public Crawler(int numberOfThreads) {
         this.numberOfThreads = numberOfThreads;
-        options.addArguments("headless");
-        options.addArguments("--start-maximized");
+        this.threadRoles = new ArrayList<>();
     }
 
     public void exe() {
         long startTime = System.currentTimeMillis();
         try {
             ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
-
+            int totalPage = findTotalPage();
+            splitPage(totalPage);
+            System.out.println("전체 페이지 : " + totalPage);
             for (int thread = 0; thread < numberOfThreads; thread++) {
                 final int currentThread = thread;
                 Callable<Void> task = () -> {
-                    Workbook workbook = new XSSFWorkbook();
-                    Sheet sheet = workbook.createSheet("Programmers Job Information");
-                    WebDriver driver = new ChromeDriver(options);
-                    crawlPage(currentThread, driver, workbook, sheet);
+                    try (Workbook workbook = new XSSFWorkbook()) {
+                        Sheet sheet = workbook.createSheet("Programmers Job Information");
+                        WebDriver driver = new ChromeDriver();
+                        crawlPage(currentThread, driver, workbook, sheet, totalPage);
+                    }
                     return null;
                 };
                 executorService.submit(task);
             }
 
             executorService.shutdown();
-            executorService.awaitTermination(5, TimeUnit.MINUTES);
+            executorService.awaitTermination(30, TimeUnit.MINUTES);
         } catch (Exception error) {
             error.printStackTrace();
         } finally {
@@ -59,61 +58,100 @@ public class Crawler {
         }
     }
 
-    private void crawlPage(int threadNum, WebDriver driver, Workbook workbook, Sheet sheet) {
+    private void splitPage(int totalPages) {
+        int pagesPerThread = totalPages / numberOfThreads; // 각 스레드가 처리할 기본 페이지 수
+        int remainingPages = totalPages % numberOfThreads; // 나머지 페이지 수
+
+        int[] threadPages = new int[numberOfThreads];
+
+        // 각 스레드에 할당될 페이지 수 계산
+        for (int thread = 0; thread < numberOfThreads; thread++) {
+            if (remainingPages > 0) {
+                threadPages[thread] = pagesPerThread + 1;
+                remainingPages--;
+            } else {
+                threadPages[thread] = pagesPerThread;
+            }
+        }
+
+        // 각 스레드에게 할당된 페이지 범위로 스레드 생성 및 실행
+        int startPage = 1;
+        int endPage = threadPages[0];
+        for (int thread = 0; thread < numberOfThreads; thread++) {
+            if (thread == numberOfThreads - 1) {
+                endPage--;
+            }
+            threadRoles.add(new ThreadRole(startPage, endPage));
+            startPage += threadPages[thread];
+            endPage += threadPages[thread];
+        }
+    }
+
+    private void crawlPage(int threadNum, WebDriver driver, Workbook workbook, Sheet sheet, int lastPage) {
         try {
-            int lastPage = findLastPage();
-            int totalPage = lastPage / numberOfThreads; // 각 스레드가 담당할 전체 페이지 (마지막 페이지/ 스레드개수)
-            int startPage = threadNum * totalPage; // 시작 페이지 = 전체 페이지 * 스레드 번호
-            int endPage = (threadNum + 1) * totalPage; // 마지막 페이지
-            int rowNum =0;
-            for (int page = startPage; page < endPage; page++) {
+            int startPage = threadRoles.get(threadNum).getStartPage();
+            int endPage = threadRoles.get(threadNum).getEndPage();
+
+            System.out.println(String.format("%d번 스레드, 시작 페이지 : %d, 마지막 페이지 : %d", threadNum, startPage, endPage));
+
+            int rowNum = 0;
+            for (int page = startPage; page <= endPage; page++) {
                 String url = "https://career.programmers.co.kr/job?page=" + page;
+                // 해상도 기준
+                // 브라우저 창 크기 변경(360, 450)
+                Dimension browserSize = new Dimension(675, 780);
+                driver.manage().window().setSize(browserSize);
+                // 브라우저 창 위치 설정
+                if (threadNum < 4) {
+                    Point browserPosition = new Point(threadNum * 645, 0);
+                    driver.manage().window().setPosition(browserPosition);
+                } else {
+                    Point browserPosition = new Point((threadNum - 4) * 645, 800);
+                    driver.manage().window().setPosition(browserPosition);
+                }
                 driver.get(url);
+
                 WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-                WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("list-positions")));
-                List<WebElement> elements = element.findElements(By.className("list-position-item"));
+                WebElement webElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("list-positions")));
+                Thread.sleep(400);
+                List<WebElement> elements = webElement.findElements(By.className("list-position-item"));
 
                 for (WebElement e : elements) {
                     String information = e.getText();
                     String link = e.findElement(By.className("position-link")).getAttribute("href");
-                    //   System.out.println(information + "\n" + link + "\n");
-                    Row row = sheet.createRow(rowNum++); // 열 생성
-                    String type[] = information.split("\n"); //회사명, 지역, 채용분야, 채용 링크 분류 (엑셀 열을 나누기 위해)
+                    Row row = sheet.createRow(rowNum++);
+                    String[] type = information.split("\n");
                     for (int column = 0; column < type.length; column++) {
-                        row.createCell(column).setCellValue(type[column]); // 분류된 정보들을 각 행에 저장
+                        row.createCell(column).setCellValue(type[column]);
                     }
-                    row.createCell(6).setCellValue(link); // 회사 링크 6행에 저장
+                    row.createCell(6).setCellValue(link);
                 }
-                // 실제 엑셀에 쓰기
-                try (FileOutputStream outputStream = new FileOutputStream("크롤링_데이터" + startPage + ".xlsx")) {
-                    workbook.write(outputStream);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            }
+
+            // 실제 엑셀에 쓰기
+            try (FileOutputStream outputStream = new FileOutputStream("크롤링_데이터_" + startPage + ".xlsx")) {
+                workbook.write(outputStream);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            driver.quit();
+            driver.close();
         }
     }
-    private int findLastPage(){
+
+    private int findTotalPage() {
         String url = "https://career.programmers.co.kr/job";
-        WebDriver driver = new ChromeDriver(options);
-        driver.get(url);
-        WebElement element = driver.findElement(By.xpath("//*[@id=\"list-positions-wrapper\"]/div/div[1]/h6"));
+        WebDriver pageDriver = new ChromeDriver();
+        pageDriver.get(url);
+        WebElement element = pageDriver.findElement(By.xpath("//*[@id=\"list-positions-wrapper\"]/div/div[1]/h6"));
 
         String text = element.getText();
-        String numberText = "";
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-            if ('0' <= c && c <= '9') numberText += c; // 숫자인 부분만 연결
-            else break; // 숫자가 아니면 반복문 종료
-        }
-
-        int infoNumber = Integer.parseInt(numberText); // 채용 정보 총 개수
-        int lastPage = (infoNumber + 19) / 20; // 올림 처리하여 마지막 페이지 계산
-        return lastPage; //한 페이지당 20개
+        pageDriver.close();
+        String numberText = text.replaceAll("\\D", "");
+        int infoNumber = Integer.parseInt(numberText);
+        return (infoNumber + 23) / 24;
     }
 }
