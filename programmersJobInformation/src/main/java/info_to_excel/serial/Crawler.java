@@ -11,77 +11,84 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Crawler {
 
     private final WebDriver driver;
-    WebDriverWait wait;
     private final ChromeOptions options;
-    private final List<List<String>> dataList;
+    WebDriverWait wait;
 
     public Crawler() {
         options = new ChromeOptions();
-        options.addArguments("headless");
-        options.addArguments("--start-maximized");
+        options.addArguments("--headless");
+
         driver = new ChromeDriver(options);
-        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-        dataList = new ArrayList<>();
+        wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     }
 
     public void exe() {
         long startTime = System.currentTimeMillis();
         try {
-            int lastPage = findLastPage();
-            for (int page = 1; page <= lastPage; page++) {
-                System.out.println("크롤링 페이지 : " + page + ", 마지막 페이지 : " + lastPage);
-
+            int totalPage = findTotalPage();
+            List<List<String>> dataList = new ArrayList<>();
+            for (int page = 1; page <= totalPage; page++) {
                 String url = "https://career.programmers.co.kr/job?page=" + page;
                 driver.get(url);
 
-                WebElement webElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("list-positions")));
-                Thread.sleep(400);
+                wait.until(ExpectedConditions.jsReturnsValue("return document.readyState == 'complete'"));
+
+                WebElement webElement = wait.until(ExpectedConditions.presenceOfElementLocated(By.className("list-positions")));
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("list-position-item")));
 
                 List<WebElement> elements = webElement.findElements(By.className("list-position-item"));
                 for (WebElement element : elements) {
                     String information = element.getText();
                     List<String> rowData = new ArrayList<>(List.of(information.split("\n")));
+
                     dataList.add(rowData);
                 }
             }
 
-            writeToExcel("크롤링_데이터.xlsx");
+            writeToExcel(dataList);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             driver.close();
             long endTime = System.currentTimeMillis();
             long elapsedTimeMillis = endTime - startTime;
-            System.out.println("경과 시간 (밀리초): " + elapsedTimeMillis);
+            System.out.println("크롤링 시간 (밀리초): " + elapsedTimeMillis);
         }
     }
 
-    private void writeToExcel(String fileName) {
-        try (FileOutputStream outputStream = new FileOutputStream(fileName)) {
-            Workbook workbook = new XSSFWorkbook();
+    private void writeToExcel(List<List<String>> dataList) {
+        String fileName = LocalDate.now() + ".xlsx";
+
+        try (Workbook workbook = new XSSFWorkbook();
+             FileOutputStream outputStream = new FileOutputStream(fileName)) {
             Sheet sheet = workbook.createSheet("Programmers Job Information");
 
-            int rowNum = 0;
-            for (List<String> rowData : dataList) {
-                Row row = sheet.createRow(rowNum++);
+            for (int rowNum = 0; rowNum < dataList.size(); rowNum++) {
+                Row row = sheet.createRow(rowNum);
+                List<String> rowData = dataList.get(rowNum);
+
                 for (int column = 0; column < rowData.size(); column++) {
                     row.createCell(column).setCellValue(rowData.get(column));
                 }
             }
+
             workbook.write(outputStream);
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 
-    private int findLastPage() {
+    private int findTotalPage() {
         String url = "https://career.programmers.co.kr/job";
         WebDriver pageDriver = new ChromeDriver(options);
         pageDriver.get(url);
