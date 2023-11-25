@@ -1,5 +1,7 @@
-package crawler.parallel;
+package crawler.parallel.crawler;
 
+import crawler.parallel.vo.Resolution;
+import crawler.parallel.vo.ThreadRole;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -18,42 +20,32 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 public class Crawler {
-    private final int width; // 가로 해상도
-    private final int height; // 세로 해상도
-    private final String appendSql; // 필터 sql
-    private final int numberOfThreads;
+    private final Resolution resolution; // 화면 해상도
+    private final String appendQuery; //
+    private int numberOfThreads;
     private final List<ThreadRole> threadRoles;
 
-    public Crawler(int width, int height, String appendSql, int numberOfThreads) {
-        this.width = width;
-        this.height = height;
-        this.appendSql = appendSql;
+    public Crawler(Resolution resolution, String appendQuery, int numberOfThreads) {
+        this.resolution = resolution;
+        this.appendQuery = appendQuery;
         this.numberOfThreads = numberOfThreads;
         this.threadRoles = new ArrayList<>();
     }
 
-    public void exe() {
+    public void execute() {
+        System.out.println(appendQuery);
         long startTime = System.currentTimeMillis();
         int totalPage = findTotalPage();
         splitPage(totalPage);
         try {
             ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 
-            for (int thread = 0; thread < numberOfThreads; thread++) {
-                final int currentThread = thread;
-                Callable<Void> task = () -> {
-                    try {
-                        WebDriver driver = new ChromeDriver();
-                        crawlPage(currentThread, driver);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                };
-                executorService.submit(task);
-            }
+            IntStream.range(0, numberOfThreads)
+                    .forEach(thread -> executorService
+                            .submit(() -> crawlPage(thread)));
 
             executorService.shutdown();
             executorService.awaitTermination(30, TimeUnit.MINUTES);
@@ -66,11 +58,12 @@ public class Crawler {
         }
     }
 
-    private void crawlPage(int threadNumber, WebDriver driver) {
+    private void crawlPage(int threadNumber) {
+        WebDriver driver = new ChromeDriver();
+
         try(Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Programmers Job Information " + threadNumber + "번");
-
-            initDriver(driver, threadNumber);
+            setupDriver(driver, threadNumber);
 
             int startPage = threadRoles.get(threadNumber).startPage();
             int endPage = threadRoles.get(threadNumber).endPage();
@@ -78,7 +71,7 @@ public class Crawler {
 
             int rowNum = 0;
             for (int page = startPage; page < endPage; page++) {
-                String url = "https://career.programmers.co.kr/job?page=" + page + appendSql;
+                String url = "https://career.programmers.co.kr/job?page=" + page + appendQuery;
                 driver.get(url);
 
                 WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
@@ -88,15 +81,16 @@ public class Crawler {
                 wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("list-position-item")));
                 List<WebElement> elements = webElement.findElements(By.className("list-position-item"));
 
-                for (WebElement e : elements) {
-                    String information = e.getText();
+                for (WebElement element : elements) {
+                    String information = element.getText();
                     Row row = sheet.createRow(rowNum++);
-                    String[] type = information.split("\n");
-                    for (int column = 0; column < type.length; column++) {
-                        row.createCell(column).setCellValue(type[column]);
+                    List<String> types = List.of(information.split("\n"));
+                    for (int column = 0; column < types.size(); column++) {
+                        row.createCell(column).setCellValue(types.get(column));
                     }
                 }
             }
+
             writeToExcel(workbook, threadNumber);
         } catch (Exception e) {
             e.printStackTrace();
@@ -106,19 +100,20 @@ public class Crawler {
     }
 
     private int findTotalPage() {
-        String url = "https://career.programmers.co.kr/job?page=1" + appendSql;
+        String url = "https://career.programmers.co.kr/job?page=1" + appendQuery;
         WebDriver driver = new ChromeDriver();
         driver.get(url);
-        WebElement element = driver.findElement(By.xpath("//*[@id=\"list-positions-wrapper\"]/div/div[1]/h6"));
 
+        WebElement element = driver.findElement(By.xpath("//*[@id=\"list-positions-wrapper\"]/div/div[1]/h6"));
         String text = element.getText();
         driver.close();
 
         String numberText = text.replaceAll("\\D", ""); // 숫자를 제외한 문자열 ""으로 치환
         int infoNumber = Integer.parseInt(numberText);
+        System.out.println("전체 채용 정보 : " + infoNumber + "개");
         int totalPage = (infoNumber + 23) / 24;
 
-        System.out.println("전체 페이지 : " + totalPage);
+        System.out.println("전체 페이지 : " + totalPage + "페이지");
         return totalPage;
     }
 
@@ -127,8 +122,15 @@ public class Crawler {
         int remainingPages = totalPages % numberOfThreads; // 나머지 페이지 수
         // 예를 들어, 페이지가 71개고 스레드 개수가 8개면
         // 각 스레드는 {9, 9, 9, 9, 9, 9, 9, 8} 개의 페이지를 크롤링한다.
-
         int[] threadPages = new int[numberOfThreads];
+
+        // 스레드 개수는 8개인데 전체 페이지가 7개인 경우, 1개의 스레드만 이용
+        if (pagesPerThread < 1) {
+            numberOfThreads = 1;
+            int startPage= 1;
+            int endPage= remainingPages + 1;
+            threadRoles.add(new ThreadRole(startPage, endPage));
+        }
 
         // 각 스레드에 할당될 페이지 수 계산
         for (int thread = 0; thread < numberOfThreads; thread++) {
@@ -140,32 +142,31 @@ public class Crawler {
             }
         }
 
-        // 각 스레드에게 할당된 페이지 범위로 스레드 생성 및 실행
         int startPage = 1;
-        int endPage = 1 + threadPages[0];
+        int endPage;
         for (int thread = 0; thread < numberOfThreads; thread++) {
+            endPage = startPage + threadPages[thread];
             threadRoles.add(new ThreadRole(startPage, endPage));
-            startPage += threadPages[thread];
-            endPage += threadPages[thread];
+            startPage = endPage;
         }
     }
 
-    private void initDriver(WebDriver driver, int threadNumber) {
-        int widthCount = 4; // 화면 가로에 나타 낼 브라우저 개수 (4 x 2)
+    private void setupDriver(WebDriver driver, int threadNumber) {
+        if (numberOfThreads < 2) numberOfThreads = 2;
+        int widthCount = numberOfThreads / 2; // 화면 나타 낼 브라우저 비율 (numberOfThreads x 2), 스레드 개수가 8개면 4x2
         int heightCount = 2;
-
-        int browserWidth = width / widthCount;
-        int browserHeight = height / heightCount;
+        int browserWidth = resolution.getWidth() / widthCount;
+        int browserHeight = resolution.getHeight() / heightCount;
         Dimension browserSize = new Dimension(browserWidth + 25, browserHeight);
         driver.manage().window().setSize(browserSize);
 
+        Point browserPosition;
         if (threadNumber < widthCount) {
-            Point browserPosition = new Point(threadNumber * browserWidth, 0);
-            driver.manage().window().setPosition(browserPosition);
+            browserPosition = new Point(threadNumber * browserWidth, 0);
         } else {
-            Point browserPosition = new Point((threadNumber - widthCount) * browserWidth, browserHeight);
-            driver.manage().window().setPosition(browserPosition);
+            browserPosition = new Point((threadNumber - widthCount) * browserWidth, browserHeight);
         }
+        driver.manage().window().setPosition(browserPosition);
     }
 
     private void writeToExcel(Workbook workbook, int threadNumber) {
