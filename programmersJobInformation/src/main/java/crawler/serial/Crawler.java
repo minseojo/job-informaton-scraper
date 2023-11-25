@@ -1,4 +1,4 @@
-package info_to_excel.serial;
+package crawler.serial;
 
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;

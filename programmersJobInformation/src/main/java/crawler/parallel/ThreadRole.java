@@ -1,4 +1,4 @@
-package info_to_excel.parallel;
+package crawler.parallel;
 
 public record ThreadRole(int startPage, int endPage) {
 }

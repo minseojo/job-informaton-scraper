@@ -1,4 +1,4 @@
-package info_to_excel.serial;
+package crawler.serial;
 
 public class Main {
     public static void main(String[] args) {

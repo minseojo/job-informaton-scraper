@@ -1,4 +1,4 @@
-package info_to_excel.parallel;
+package crawler.parallel;
 
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -22,12 +22,14 @@ import java.util.concurrent.TimeUnit;
 public class Crawler {
     private final int width; // 가로 해상도
     private final int height; // 세로 해상도
+    private final String appendSql; // 필터 sql
     private final int numberOfThreads;
     private final List<ThreadRole> threadRoles;
 
-    public Crawler(int width, int height, int numberOfThreads) {
+    public Crawler(int width, int height, String appendSql, int numberOfThreads) {
         this.width = width;
         this.height = height;
+        this.appendSql = appendSql;
         this.numberOfThreads = numberOfThreads;
         this.threadRoles = new ArrayList<>();
     }
@@ -76,18 +78,15 @@ public class Crawler {
 
             int rowNum = 0;
             for (int page = startPage; page < endPage; page++) {
-                String url = "https://career.programmers.co.kr/job?page=" + page;
+                String url = "https://career.programmers.co.kr/job?page=" + page + appendSql;
                 driver.get(url);
+
                 WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
                 wait.until(ExpectedConditions.jsReturnsValue("return document.readyState == 'complete'"));
 
                 WebElement webElement = wait.until(ExpectedConditions.presenceOfElementLocated(By.className("list-positions")));
                 wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("list-position-item")));
                 List<WebElement> elements = webElement.findElements(By.className("list-position-item"));
-//                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-//                WebElement webElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("list-positions")));
-//                Thread.sleep(400);
-//                List<WebElement> elements = webElement.findElements(By.className("list-position-item"));
 
                 for (WebElement e : elements) {
                     String information = e.getText();
@@ -98,8 +97,6 @@ public class Crawler {
                     }
                 }
             }
-
-
             writeToExcel(workbook, threadNumber);
         } catch (Exception e) {
             e.printStackTrace();
@@ -109,7 +106,7 @@ public class Crawler {
     }
 
     private int findTotalPage() {
-        String url = "https://career.programmers.co.kr/job";
+        String url = "https://career.programmers.co.kr/job?page=1" + appendSql;
         WebDriver driver = new ChromeDriver();
         driver.get(url);
         WebElement element = driver.findElement(By.xpath("//*[@id=\"list-positions-wrapper\"]/div/div[1]/h6"));
