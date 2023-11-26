@@ -39,7 +39,6 @@ public class RecruitmentCrawler {
     }
 
     public void execute() {
-        System.out.println(appendQuery);
         long startTime = System.currentTimeMillis();
         int totalPage = findTotalPage();
         splitPage(totalPage);
