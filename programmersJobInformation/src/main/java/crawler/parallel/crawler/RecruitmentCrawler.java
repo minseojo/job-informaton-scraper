@@ -72,6 +72,7 @@ public class RecruitmentCrawler {
         WebElement webElement = wait.until(ExpectedConditions.presenceOfElementLocated(By.className("list-positions")));
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("list-position-item")));
         List<WebElement> elements = webElement.findElements(By.className("list-position-item"));
+        driver.close();
         return elements.size();
     }
 
