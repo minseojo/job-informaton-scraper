@@ -37,6 +37,7 @@ public class Crawler {
             int totalPage = findTotalPage();
             List<List<String>> dataList = new ArrayList<>();
             for (int page = 1; page <= totalPage; page++) {
+                System.out.println("현재 크롤링 페이지 : " + page);
                 String url = "https://career.programmers.co.kr/job?page=" + page;
                 driver.get(url);
 

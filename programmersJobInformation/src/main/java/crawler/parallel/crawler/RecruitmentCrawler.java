@@ -1,5 +1,7 @@
 package crawler.parallel.crawler;
 
+import crawler.parallel.file.ExcelMerger;
+import crawler.parallel.file.FileManager;
 import crawler.parallel.vo.Resolution;
 import crawler.parallel.vo.ThreadRole;
 import org.apache.poi.ss.usermodel.Row;
@@ -12,23 +14,24 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-public class Crawler {
+public class RecruitmentCrawler {
     private final Resolution resolution; // 화면 해상도
     private final String appendQuery; //
     private int numberOfThreads;
     private final List<ThreadRole> threadRoles;
 
-    public Crawler(Resolution resolution, String appendQuery, int numberOfThreads) {
+    public RecruitmentCrawler(Resolution resolution, String appendQuery, int numberOfThreads) {
         this.resolution = resolution;
         this.appendQuery = appendQuery;
         this.numberOfThreads = numberOfThreads;
@@ -91,9 +94,10 @@ public class Crawler {
                 }
             }
 
-            writeToExcel(workbook, threadNumber);
-        } catch (Exception e) {
+            writeToMockExcel(workbook, threadNumber);
+        } catch (IOException e) {
             e.printStackTrace();
+            throw new IllegalArgumentException(e.getMessage());
         } finally {
             driver.close();
         }
@@ -169,11 +173,13 @@ public class Crawler {
         driver.manage().window().setPosition(browserPosition);
     }
 
-    private void writeToExcel(Workbook workbook, int threadNumber) {
-        String fileName = LocalDate.now().toString();
-        try (FileOutputStream outputStream = new FileOutputStream(fileName + "_" + threadNumber + ".xlsx")) {
+    private void writeToMockExcel(Workbook workbook, int threadNumber) throws IOException {
+        Path mockDirectoryPath = FileManager.createMockDirectory();
+        Path mcokFilePath = Paths.get(mockDirectoryPath.toString(), threadNumber + ExcelMerger.FILE_EXTENSION);
+
+        try (FileOutputStream outputStream = new FileOutputStream(mcokFilePath.toString())) {
             workbook.write(outputStream);
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

@@ -1,11 +1,13 @@
 package crawler.parallel;
 
+import crawler.parallel.file.ExcelMerger;
 import crawler.parallel.filter.Filter;
-import crawler.parallel.crawler.Crawler;
+import crawler.parallel.crawler.RecruitmentCrawler;
 import crawler.parallel.generator.QueryGenerator;
 import crawler.parallel.crawler.SetupCrawler;
 import crawler.parallel.filter.Careers;
 import crawler.parallel.filter.Jobs;
+import crawler.parallel.vo.FileName;
 import crawler.parallel.vo.Resolution;
 import crawler.parallel.filter.Salaries;
 
@@ -16,15 +18,20 @@ import static crawler.parallel.filter.Filter.*;
 
 public class Controller {
     private final Input input;
+    private final ExcelMerger excelMerger;
 
-    public Controller(Input input) {
+    public Controller(Input input, ExcelMerger excelMerger) {
         this.input = input;
+        this.excelMerger = excelMerger;
     }
 
     public void run() {
         Map<String, Filter> appendFilters = prepareAppendFilter(); // 필터 크롤링
-        Map<String, String> appendQuery = prepareAppendQueries(appendFilters); // 크롤링한 필터에 대한 쿼리 생성
-        crawlRecruitment(appendQuery); // 필터를 적용한 쿼리를 가지고, 프로그래머스 채용 정보 크롤링 시작
+        Map<String, String> appendQuery = prepareAppendQueries(appendFilters); // 크롤링한 필터에 대한 쿼리 생성 (필터 입력 받기)
+        Resolution resolution = readResolution(); // 모니터 해상도 입력 받아오기
+        FileName outputFileName = readOutputFileName(); // 수집한 데이터를 저장 할 파일 이름 입력 받기
+        crawlRecruitment(appendQuery, resolution); // 필터를 적용한 쿼리를 가지고, 프로그래머스 채용 정보 크롤링 시작
+        excelMerger.mergeFiles(outputFileName);
     }
 
     private Map<String, Filter> prepareAppendFilter() {
@@ -57,10 +64,7 @@ public class Controller {
         return queries;
     }
 
-    private void crawlRecruitment(Map<String, String> queries) {
-        // 모니터 해상도 입력 받아오기
-        Resolution resolution = readResolution();
-
+    private void crawlRecruitment(Map<String, String> queries, Resolution resolution) {
         // 뒤에 추가 할 쿼리 생성
         String appendQuery = queries.get(JOBS) + queries.get(CAREERS) + queries.get(SALARIES);
 
@@ -69,8 +73,8 @@ public class Controller {
         System.out.println("사용자 컴퓨터 CPU 코어 개수 : " + numberOfThreads);
 
         // 크롤러 생성
-        Crawler crawler = new Crawler(resolution, appendQuery, numberOfThreads);
-        crawler.execute();
+        RecruitmentCrawler recruitmentCrawler = new RecruitmentCrawler(resolution, appendQuery, numberOfThreads);
+        recruitmentCrawler.execute();
     }
 
     private void readFilterJobs(Map<String, Filter> filters, Map<String, String> queries, QueryGenerator queryGenerator) {
@@ -117,6 +121,17 @@ public class Controller {
             try {
                 String[] inputResolution = input.readResolution().split("\\*"); // 1920*1080 을 두개로 나눔, [1] = width, [2] = height
                 return new Resolution(inputResolution[0], inputResolution[1]);
+            } catch (IllegalArgumentException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+    }
+
+    private FileName readOutputFileName() {
+        while (true) {
+            try {
+                String intputOutputFileName = input.readOutputFileName();
+                return new FileName(intputOutputFileName);
             } catch (IllegalArgumentException e) {
                 System.out.println(e.getMessage());
             }

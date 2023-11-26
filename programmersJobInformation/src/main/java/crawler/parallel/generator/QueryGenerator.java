@@ -51,7 +51,7 @@ public class QueryGenerator {
         try {
             return Integer.parseInt(input.trim());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("❌ 존재하지 않는 번호입니다. 다시 선택해 주세요.");
+            throw new IllegalArgumentException("❌ 존재하지 않는 번호 입니다. 다시 선택해 주세요.");
         }
     }
 }

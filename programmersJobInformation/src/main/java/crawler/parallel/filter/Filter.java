@@ -40,10 +40,7 @@ public abstract class Filter {
     }
 
     public String createQuery(Integer filterId) {
-        StringBuilder result = new StringBuilder();
-        result.append(String.format(query, filterId));
-
-        return String.valueOf(result);
+        return String.valueOf(String.format(query, filterId));
     }
 
     public Integer findFilter(Integer filterId) {
@@ -57,11 +54,7 @@ public abstract class Filter {
     }
 
     public boolean isAllFilter(Integer categoryId) {
-        if (categoryId.equals(OPTION_ALL_VALUE)) {
-            return true;
-        }
-
-        return false;
+        return categoryId.equals(OPTION_ALL_VALUE);
     }
 
     public Map<String, Integer> getFilters() {
