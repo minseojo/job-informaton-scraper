@@ -33,8 +33,6 @@ public class FileManager {
             if (!mockDirectory.delete()) {
                 System.err.println("폴더 삭제에 실패했습니다.");
             }
-        } else {
-            throw new IllegalArgumentException(FileManager.MOCK_DIRECTORY_PATH + " 폴더가 존재하지 않습니다.");
         }
     }
 

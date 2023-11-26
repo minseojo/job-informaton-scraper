@@ -1,6 +1,7 @@
 package crawler.parallel;
 
 import crawler.parallel.file.ExcelMerger;
+import crawler.parallel.file.FileManager;
 import crawler.parallel.filter.Filter;
 import crawler.parallel.crawler.RecruitmentCrawler;
 import crawler.parallel.generator.QueryGenerator;
@@ -26,6 +27,7 @@ public class Controller {
     }
 
     public void run() {
+        FileManager.deleteMockDirectory(); // mcok 폴더 삭제
         Map<String, Filter> appendFilters = prepareAppendFilter(); // 필터 크롤링
         Map<String, String> appendQuery = prepareAppendQueries(appendFilters); // 크롤링한 필터에 대한 쿼리 생성 (필터 입력 받기)
         Resolution resolution = readResolution(); // 모니터 해상도 입력 받아오기
