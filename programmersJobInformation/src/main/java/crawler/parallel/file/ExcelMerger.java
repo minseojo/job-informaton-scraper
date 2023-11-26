@@ -21,6 +21,8 @@ public class ExcelMerger {
     public static final String FILE_EXTENSION = ".xlsx";
 
     public void mergeFiles(FileName outputFileName) {
+        FileManager.deleteMockDirectory();
+
         List<FileName> fileNamesToMerge = addMockDirectoryFiles();
 
         // 결과를 저장할 워크북 생성
@@ -72,8 +74,6 @@ public class ExcelMerger {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        FileManager.deleteMockDirectory();
     }
 
     private static List<FileName>  addMockDirectoryFiles() {

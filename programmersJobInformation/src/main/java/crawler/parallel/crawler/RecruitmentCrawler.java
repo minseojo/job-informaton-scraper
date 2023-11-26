@@ -40,7 +40,8 @@ public class RecruitmentCrawler {
 
     public void execute() {
         long startTime = System.currentTimeMillis();
-        int totalPage = findTotalPage();
+        int elementSize = findElementSize();
+        int totalPage = findTotalPage(elementSize);
         splitPage(totalPage);
         try {
             ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
@@ -57,6 +58,72 @@ public class RecruitmentCrawler {
             long endTime = System.currentTimeMillis();
             long elapsedTimeMillis = endTime - startTime;
             System.out.println("크롤링 시간 (밀리초): " + elapsedTimeMillis);
+        }
+    }
+
+    private int findElementSize() {
+        WebDriver driver = new ChromeDriver();
+        String url = "https://career.programmers.co.kr/job?page=1" + appendQuery;
+        driver.get(url);
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+        wait.until(ExpectedConditions.jsReturnsValue("return document.readyState == 'complete'"));
+
+        WebElement webElement = wait.until(ExpectedConditions.presenceOfElementLocated(By.className("list-positions")));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("list-position-item")));
+        List<WebElement> elements = webElement.findElements(By.className("list-position-item"));
+        return elements.size();
+    }
+
+    private int findTotalPage(int elementSize) {
+        String url = "https://career.programmers.co.kr/job?page=1" + appendQuery;
+        WebDriver driver = new ChromeDriver();
+        driver.get(url);
+
+        WebElement element = driver.findElement(By.xpath("//*[@id=\"list-positions-wrapper\"]/div/div[1]/h6"));
+        String text = element.getText();
+        driver.close();
+
+        String numberText = text.replaceAll("\\D", ""); // 숫자를 제외한 문자열 ""으로 치환
+        int infoNumber = Integer.parseInt(numberText);
+        System.out.println("전체 채용 정보 : " + infoNumber + "개");
+        int totalPage = (infoNumber + elementSize - 1) / elementSize;
+
+        System.out.println("전체 페이지 : " + totalPage + "페이지");
+        return totalPage;
+    }
+
+    private void splitPage(int totalPages) {
+        int pagesPerThread = totalPages / numberOfThreads; // 각 스레드가 처리할 기본 페이지 수
+        int remainingPages = totalPages % numberOfThreads; // 나머지 페이지 수
+        // 예를 들어, 페이지가 71개고 스레드 개수가 8개면
+        // 각 스레드는 {9, 9, 9, 9, 9, 9, 9, 8} 개의 페이지를 크롤링한다.
+        int[] threadPages = new int[numberOfThreads];
+
+        // 스레드 개수는 8개인데 전체 페이지가 7개인 경우, 1개의 스레드만 이용
+        if (pagesPerThread < 1) {
+            numberOfThreads = 1;
+            int startPage= 1;
+            int endPage= remainingPages + 1;
+            threadRoles.add(new ThreadRole(startPage, endPage));
+        }
+
+        // 각 스레드에 할당될 페이지 수 계산
+        for (int thread = 0; thread < numberOfThreads; thread++) {
+            if (remainingPages > 0) {
+                threadPages[thread] = pagesPerThread + 1;
+                remainingPages--;
+            } else {
+                threadPages[thread] = pagesPerThread;
+            }
+        }
+
+        int startPage = 1;
+        int endPage;
+        for (int thread = 0; thread < numberOfThreads; thread++) {
+            endPage = startPage + threadPages[thread];
+            threadRoles.add(new ThreadRole(startPage, endPage));
+            startPage = endPage;
         }
     }
 
@@ -99,58 +166,6 @@ public class RecruitmentCrawler {
             throw new IllegalArgumentException(e.getMessage());
         } finally {
             driver.close();
-        }
-    }
-
-    private int findTotalPage() {
-        String url = "https://career.programmers.co.kr/job?page=1" + appendQuery;
-        WebDriver driver = new ChromeDriver();
-        driver.get(url);
-
-        WebElement element = driver.findElement(By.xpath("//*[@id=\"list-positions-wrapper\"]/div/div[1]/h6"));
-        String text = element.getText();
-        driver.close();
-
-        String numberText = text.replaceAll("\\D", ""); // 숫자를 제외한 문자열 ""으로 치환
-        int infoNumber = Integer.parseInt(numberText);
-        System.out.println("전체 채용 정보 : " + infoNumber + "개");
-        int totalPage = (infoNumber + 23) / 24;
-
-        System.out.println("전체 페이지 : " + totalPage + "페이지");
-        return totalPage;
-    }
-
-    private void splitPage(int totalPages) {
-        int pagesPerThread = totalPages / numberOfThreads; // 각 스레드가 처리할 기본 페이지 수
-        int remainingPages = totalPages % numberOfThreads; // 나머지 페이지 수
-        // 예를 들어, 페이지가 71개고 스레드 개수가 8개면
-        // 각 스레드는 {9, 9, 9, 9, 9, 9, 9, 8} 개의 페이지를 크롤링한다.
-        int[] threadPages = new int[numberOfThreads];
-
-        // 스레드 개수는 8개인데 전체 페이지가 7개인 경우, 1개의 스레드만 이용
-        if (pagesPerThread < 1) {
-            numberOfThreads = 1;
-            int startPage= 1;
-            int endPage= remainingPages + 1;
-            threadRoles.add(new ThreadRole(startPage, endPage));
-        }
-
-        // 각 스레드에 할당될 페이지 수 계산
-        for (int thread = 0; thread < numberOfThreads; thread++) {
-            if (remainingPages > 0) {
-                threadPages[thread] = pagesPerThread + 1;
-                remainingPages--;
-            } else {
-                threadPages[thread] = pagesPerThread;
-            }
-        }
-
-        int startPage = 1;
-        int endPage;
-        for (int thread = 0; thread < numberOfThreads; thread++) {
-            endPage = startPage + threadPages[thread];
-            threadRoles.add(new ThreadRole(startPage, endPage));
-            startPage = endPage;
         }
     }
 
