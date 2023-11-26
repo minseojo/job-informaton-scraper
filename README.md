@@ -1,4 +1,7 @@
-# 셀레니움을 이용한 채용정보 크롤러
+# 셀레니움을 이용한 프로그래머스 채용정보 크롤러
+
+## ❗️ 주의
+- 크롤링 도중에 `mock` 디렉토리가 생기는데, 이 디렉토리를 도중에 열어놓으면 크롤링 결과가 저장되지 않는다.
 
 [PPT](https://github.com/minseojo/job-informaton-crawling/blob/24073493b0f636642c5eace2aed3bc40694b6369/irhw1_Crawler_%E1%84%8C%E1%85%A9%E1%84%86%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A5.ppt)
 
