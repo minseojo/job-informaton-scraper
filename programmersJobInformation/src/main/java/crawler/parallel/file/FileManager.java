@@ -10,10 +10,32 @@ public class FileManager {
     public static final String MOCK_DIRECTORY_PATH = "mock";
 
     public static Path createMockDirectory() throws IOException {
-        File directory = new File(MOCK_DIRECTORY_PATH);
-        Files.createDirectories(directory.toPath());
+        File mockDirectory = new File(MOCK_DIRECTORY_PATH);
+        Files.createDirectories(mockDirectory.toPath());
 
-        return directory.toPath();
+        return mockDirectory.toPath();
+    }
+
+    public static void deleteMockDirectory() {
+        File mockDirectory = new File(MOCK_DIRECTORY_PATH);
+
+        if (mockDirectory.exists() && mockDirectory.isDirectory()) {
+            File[] files = mockDirectory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (!file.delete()) {
+                        System.err.println("파일 삭제에 실패했습니다: " + file.getName());
+                    }
+                }
+            }
+
+            // 폴더 삭제
+            if (!mockDirectory.delete()) {
+                System.err.println("폴더 삭제에 실패했습니다.");
+            }
+        } else {
+            throw new IllegalArgumentException(FileManager.MOCK_DIRECTORY_PATH + " 폴더가 존재하지 않습니다.");
+        }
     }
 
     public static Path createDirectory(LocalDate date) throws IOException {

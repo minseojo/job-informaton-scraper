@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static crawler.parallel.file.FileManager.MOCK_DIRECTORY_PATH;
+
 public class ExcelMerger {
     public static final String FILE_EXTENSION = ".xlsx";
 
@@ -47,8 +49,16 @@ public class ExcelMerger {
 
                                 // 셀 유형에 따라 값을 복사
                                 switch (cell.getCellType()) {
-                                    case STRING -> combinedCell.setCellValue(cell.getStringCellValue());
-                                    case NUMERIC -> combinedCell.setCellValue(cell.getNumericCellValue());
+                                    case STRING:
+                                        combinedCell.setCellValue(cell.getStringCellValue());
+                                        break;
+                                    case NUMERIC:
+                                        combinedCell.setCellValue(cell.getNumericCellValue());
+                                        break;
+                                    // 다른 셀 유형에 대한 처리를 추가할 수 있음
+                                    default:
+                                        break;
+                                        // 처리하지 않는 셀 유형에 대한 기본 동작
                                 }
                             }
                         }
@@ -63,38 +73,14 @@ public class ExcelMerger {
             e.printStackTrace();
         }
 
-        deleteMockDirectory();
-    }
-
-    private static void deleteMockDirectory() {
-        // 폴더 경로
-        String mockDirectoryPath = FileManager.MOCK_DIRECTORY_PATH;
-        // 폴더 객체 생성
-        File mockDirectory = new File(mockDirectoryPath);
-        // 폴더가 존재하고 디렉토리인지 확인
-        if (mockDirectory.exists() && mockDirectory.isDirectory()) {
-            // 폴더 내의 모든 파일 목록 가져오기
-            File[] files = mockDirectory.listFiles();
-            for (File file : Objects.requireNonNull(files)) {
-                file.delete();
-            }
-
-            mockDirectory.delete();
-        } else {
-            throw new IllegalArgumentException(FileManager.MOCK_DIRECTORY_PATH + " 폴더가 존재하지 않습니다.");
-        }
+        FileManager.deleteMockDirectory();
     }
 
     private static List<FileName>  addMockDirectoryFiles() {
         List<FileName> fileNamesToMerge = new ArrayList<>();
 
-        // 폴더 경로
-        String mockDirectoryPath = FileManager.MOCK_DIRECTORY_PATH;
-        // 폴더 객체 생성
-        File mockDirectory = new File(mockDirectoryPath);
-        // 폴더가 존재하고 디렉토리인지 확인
+        File mockDirectory = new File(MOCK_DIRECTORY_PATH);
         if (mockDirectory.exists() && mockDirectory.isDirectory()) {
-            // 폴더 내의 모든 파일 목록 가져오기
             File[] files = mockDirectory.listFiles();
             for (File file : Objects.requireNonNull(files)) {
                 if (file.toPath().toString().endsWith(ExcelMerger.FILE_EXTENSION)) {
@@ -102,7 +88,7 @@ public class ExcelMerger {
                 }
             }
         } else {
-            throw new IllegalArgumentException(FileManager.MOCK_DIRECTORY_PATH + " 폴더가 존재하지 않습니다.");
+            throw new IllegalArgumentException(MOCK_DIRECTORY_PATH + " 폴더가 존재하지 않습니다.");
         }
 
         return fileNamesToMerge;
