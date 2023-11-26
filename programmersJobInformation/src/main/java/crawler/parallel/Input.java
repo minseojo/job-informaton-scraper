@@ -56,8 +56,8 @@ public class Input {
 
         String input = SCANNER.nextLine();
         System.out.println();
-        if (!input.matches("^[a-zA-Z0-9_]+$")) {
-            throw new IllegalArgumentException("\n❌ 파일 이름은 소문자, 대문자, 숫자, \"_\" 만 포함합니다. 파일 이름을 다시 입력해 주세요,");
+        if (!input.matches("^[a-zA-Z0-9_-]+$")) {
+            throw new IllegalArgumentException("\n❌ 파일 이름은 소문자, 대문자, 숫자, 밑줄(_), 대시(-) 만 가능 합니다. 파일 이름을 다시 입력해 주세요,");
         }
 
         return input;
