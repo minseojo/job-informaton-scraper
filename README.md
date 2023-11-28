@@ -35,4 +35,6 @@
 - 광고 내용으로 인해, 전체 채용 정보가 100개여도, 광고 내용을 포함한 120개가 크롤링 될 수 있습니다.
 - 크롤링 할 전체 페이지가, 사용자 컴퓨터의 스레드 개수보다 적다면, 1개의 단일 스레드만 이용합니다. 즉 한개의 브라우저만 띄웁니다.
 
-- 
+## PPT
+(PPT)[https://github.com/minseojo/job-informaton-crawling/blob/main/programmersJobInformation/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%EB%B0%9C%ED%91%9C.pptx]
+- PPT 마지막 슬라이드에 실제 사용 영상이 있다.
