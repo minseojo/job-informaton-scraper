@@ -17,7 +17,7 @@ import java.util.Objects;
 
 import static crawler.parallel.file.FileManager.MOCK_DIRECTORY_PATH;
 
-public class ExcelMerger {
+public class ExcelMerger implements Merger{
     public static final String FILE_EXTENSION = ".xlsx";
 
     public void mergeFiles(FileName outputFileName) {

@@ -1,7 +1,7 @@
 package crawler.parallel;
 
-import crawler.parallel.file.ExcelMerger;
 import crawler.parallel.file.FileManager;
+import crawler.parallel.file.Merger;
 import crawler.parallel.filter.Filter;
 import crawler.parallel.crawler.RecruitmentCrawler;
 import crawler.parallel.generator.QueryGenerator;
@@ -19,11 +19,11 @@ import static crawler.parallel.filter.Filter.*;
 
 public class Controller {
     private final Input input;
-    private final ExcelMerger excelMerger;
+    private final Merger merger;
 
-    public Controller(Input input, ExcelMerger excelMerger) {
+    public Controller(Input input, Merger merger) {
         this.input = input;
-        this.excelMerger = excelMerger;
+        this.merger = merger;
     }
 
     public void run() {
@@ -33,7 +33,7 @@ public class Controller {
         Resolution resolution = readResolution(); // 모니터 해상도 입력 받아오기
         FileName outputFileName = readOutputFileName(); // 수집한 데이터를 저장 할 파일 이름 입력 받기
         crawlRecruitment(appendQuery, resolution); // 필터를 적용한 쿼리를 가지고, 프로그래머스 채용 정보 크롤링 시작
-        excelMerger.mergeFiles(outputFileName);
+        merger.mergeFiles(outputFileName);
     }
 
     private Map<String, Filter> prepareAppendFilter() {
