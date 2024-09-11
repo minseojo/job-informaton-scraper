@@ -42,32 +42,39 @@ Sitemap: https://programmers.co.kr/sitemaps/sitemap.xml
 ## 프로그램 동작 과정
 ### 1. 필터 스크래핑 & 정보 입력
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/5420633d-f459-4078-9736-c9ca29d906d8/Untitled.png)
+![Untitled (1)](https://github.com/user-attachments/assets/4e48c1b4-b018-4155-ab3d-1485512fc25e)
 
 - 필터 예시
     
-    ![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/9b068f76-fc59-444c-a785-1010dd5ed2ee/Untitled.png)
+![Untitled (4)](https://github.com/user-attachments/assets/1e62191a-8ed2-4eac-8e66-117f4cc66659)
     
-    메모리에 저장 후, 사용자에게 입력 제시
+필터를 스크래핑해서 메모리에 저장 후, 사용자에게 필터 입력 제시
     
-    ![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/27126a42-2aa4-47ba-886d-35abdb9858bf/Untitled.png)
+![Untitled (5)](https://github.com/user-attachments/assets/5711b60f-7ce7-49ee-922d-8af56b0f3dd9)
+
     
+</br>
 
 ### 2. 필터링 된 URI로 채용 공고 마지막 페이지 스크래핑
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/49da4ebb-ecc2-4586-bf77-3a832ceb250c/Untitled.png)
+![Untitled](https://github.com/user-attachments/assets/9547d040-9591-429e-860f-945afc0c7a3c)
+
 
 - 필터링 된 URI 예시:
-    - 연봉 3000 이상, 경력 1년 이상 공고: https://career.programmers.co.kr/job?page=1&**min_career=1**&**min_salary=3000
+    - 연봉 3000 이상, 경력 1년 이상 공고: https://career.programmers.co.kr/job?page=1&min_career=1&min_salary=3000
 
 ### 스레드 개수 선정 방법: `Runtime.getRuntime().availableProcessors()`
 
 ### 각 스레드 별 페이지 분담 알고리즘 예시
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/a9711734-99ab-4c43-9214-cf6b8f65b815/Untitled.png)
+![Untitled (2)](https://github.com/user-attachments/assets/6776348d-ae5e-4f31-aa67-ca2eab74b931)
+
+
+</br>
 
 ### 3. 각 스레드가 분담받은 페이지 스크래핑 & 파일에 데이터 저장 & 파일 병합
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/3231d9cf-715b-447a-a838-75151c36ff7f/Untitled.png)
+![Untitled (3)](https://github.com/user-attachments/assets/ffc5682e-34ac-4db5-bc57-7f8850e68af4)
+
 
 </br>
 
@@ -84,7 +91,7 @@ Sitemap: https://programmers.co.kr/sitemaps/sitemap.xml
 - **원인:** 채용 공고는 약 60개 이상의 페이지 (2024.3.11 기준)
 - **해결 방법:** 타이머 변경, 멀티 스레드 이용
     - 타이머 변경
-        - 변경 전 코드: `Thread.*sleep*(1000)`
+        - 변경 전 코드: `Thread.sleep(1000)`
         - 변경 후 코드:
         
         ```java
