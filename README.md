@@ -1,5 +1,131 @@
 # 셀레니움을 이용한 프로그래머스 채용정보 크롤러
 
+## 프로젝트소개
+[프로그래머스 채용 공고 사이트](https://career.programmers.co.kr/job)를 병렬 스크래핑하여, 그 결과를 엑셀 파일에 저장하는 프로그램 입니다.
+원하는 필터 조건에 맞는 채용 공고 정보를 신속하게 수집하고 데이터화하기 위해 만들었습니다.
+
+- 프로그래머스 사이트 Robots.txt
+
+```
+User-Agent: *
+
+Disallow: /users
+Disallow: /managers
+Disallow: /cable
+Disallow: /admin
+Disallow: /start_trial
+Disallow: /pr/*
+Allow: /
+
+Sitemap: https://programmers.co.kr/sitemaps/sitemap.xml
+```
+
+위 내용에 따라 [프로그래머스 채용 공고 사이트](https://career.programmers.co.kr/job)는 스크래핑, 크롤링이 가능하다.
+
+</br>
+
+## 사용한 기술 스택
+
+### 프로그래밍 언어
+
+- Java & JDK 11 이상
+
+### 라이브러리
+
+- selenium-java : 4.12.1
+- selenium-support : 4.12.1
+- apache-poi : 5.0.0
+- apache-poi-ooxml : 5.0.0
+
+</br>
+
+## 프로그램 동작 과정
+### 1. 필터 스크래핑 & 정보 입력
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/5420633d-f459-4078-9736-c9ca29d906d8/Untitled.png)
+
+- 필터 예시
+    
+    ![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/9b068f76-fc59-444c-a785-1010dd5ed2ee/Untitled.png)
+    
+    메모리에 저장 후, 사용자에게 입력 제시
+    
+    ![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/27126a42-2aa4-47ba-886d-35abdb9858bf/Untitled.png)
+    
+
+### 2. 필터링 된 URI로 채용 공고 마지막 페이지 스크래핑
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/49da4ebb-ecc2-4586-bf77-3a832ceb250c/Untitled.png)
+
+- 필터링 된 URI 예시:
+    - 연봉 3000 이상, 경력 1년 이상 공고: https://career.programmers.co.kr/job?page=1&**min_career=1**&**min_salary=3000
+
+### 스레드 개수 선정 방법: `Runtime.getRuntime().availableProcessors()`
+
+### 각 스레드 별 페이지 분담 알고리즘 예시
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/a9711734-99ab-4c43-9214-cf6b8f65b815/Untitled.png)
+
+### 3. 각 스레드가 분담받은 페이지 스크래핑 & 파일에 데이터 저장 & 파일 병합
+
+![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/eff19234-3ba7-4286-859e-c71f60ed1005/3231d9cf-715b-447a-a838-75151c36ff7f/Untitled.png)
+
+</br>
+
+## 고민한 부분 및 해결방법
+### 1. 웹 드라이버 호환성 문제 (호환성)
+
+- **문제점:** 셀레니움과 웹 드라이버의 버전을 맞춰야 스크래핑이 가능했습니다. 하지만 사용자 컴퓨터의 웹 드라이버 버전은 모두 달랐고, 사용자마다 웹 드라이버 버전과 셀레니움 버전을 맞춰서 다운 받아야했습니다.
+    - 예시) 크롬드라이버 121, 크롬드라이버 120, 크롬드라이버 119
+- **해결 방법:** Selenium 4.6 이상 버전부터 지원하는 Selenium 자체에 내장된 WebDriver를 통해 해결했습니다.
+
+### 2. 스크래핑 속도 향상 (성능)
+
+- **문제점:** 스크래핑 속도가 느렸습니다.
+- **원인:** 채용 공고는 약 60개 이상의 페이지 (2024.3.11 기준)
+- **해결 방법:** 타이머 변경, 멀티 스레드 이용
+    - 타이머 변경
+        - 변경 전 코드: `Thread.*sleep*(1000)`
+        - 변경 후 코드:
+        
+        ```java
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+        wait.until(ExpectedConditions.jsReturnsValue("return document.readyState == 'complete'"));
+        ```
+        
+    - 멀티 스레드 이용
+        - **멀티스레드 이용 결과:**
+            - **총 80개의 페이지,** **1,600개 정보**
+            - **약 2분 걸리던 작업 → 약 40초**
+        - **성능 향상:**  **약 2.1 ~ 2.4배 증가**
+        - **성능 표**
+            
+            
+            |  | 단일 스레드 | 멀티 스레드 (4개 또는 8개) |
+            | --- | --- | --- |
+            | 스크래핑 속도 | 76000ms ~ 120000ms | 36000ms ~ 50000ms |
+
+### 3. 데이터 동기화 문제
+
+- **문제점:** 여러 개의 스레드가 하나의 공유자원(엑셀 파일)에 접근하는 문제가 발생했습니다.
+- **원인:** 기존에는 싱글 스레드라 상관없었지만, 성능 향상을 위해 병렬 처리를 수행한 것이 원인입니다.
+- **해결 방법:**
+    1. 각각의 스레드마다 스크래핑한 데이터를 자신의 스레드 번호를 붙인 엑셀 파일에 저장
+        - ex) 0.xlsx, 1.xlsx, …, n.xlsx
+    2. 모든 엑셀 파일이 저장된 후, 해당 파일들을 하나의 파일로 병합
+        - 0.xlsx, 1.xlsx, …, n.xlsx → result.xlsx
+
+### 4. 상태 모니터링 및 디버깅 (편의성)
+
+- **문제점:** 스크래핑 정상 동작 여부를 알 수 없었습니다.
+- **해결 방법:** 사용자화면 해상도를 입력받고, 해상도에 따른 스레드의 개수를 화면 비율에 맞춰 스크래핑 과정을 시각화했습니다.
+
+</br>
+
+## 시연 영상
+- [시연 영상 링크](https://www.youtube.com/watch?v=a0PJ3KzdYwk)
+
+</br>
+
 ## ✅ 크롤러 사용 방법
 1. github clone
 2. `build.gradle` 실행
@@ -12,30 +138,8 @@
 9. 기다림....
 10. `오늘날짜/입력한 파일 명` 엑셀 파일 생성, 예시 `2023-11-26/result.xlsx`
 
-## 💽 동작 과정
-1. 필터 크롤링 (직무, 경력, 연봉)
-2. 필요한 정보 입력 받기 (직무, 경력, 연봉, 모니터 해상도, 크롤링한 데이터를 저장 할 파일 명)
-3. 전체 페이지 수 찾기
-   - 전체 채용 정보 개수 크롤링 : totalCount
-   - 한 페이지에 존재하는 채용 정보 개수 크롤링 : pageCount
-   - 전체 페이지 수 = (totalCount + (pageCount - 1)) / pageCount
-4. 크롤링 페이지 분담 (멀티 스레드)
-     - 80 페이지, 8개 스레드 : 0~7번 스레드는 10 페이지 담당
-     - 82 페이지, 8개 스레드 : 0,1번 스레드는 11 페이지, 2~7번 스레드는 10 페이지 담당
-       - 번호가 작은 스레드부터 1 페이지씩 추가 담당
-     - 7 페이지, 8개 스레드 : 단일 스레드 이용, 즉 1개의 스레드가 7 페이지 담당
-5. 크롤링 데이터 저장
-    - 각각의 스레드가 담당하는 페이지를 크롤링 후, (0~7).xlsx 파일 생성
-    - 스레드의 개수 만큼 엑셀 파일 생성 (가짜 액셀 파일)
-6. 생성된 여러개의 엑셀 파일을 하나의 액셀 파일로 병합한다.
-   
-
+</br>
 ## ❗️ 주의
 - 크롤링 도중에 `mock` 디렉토리가 생기는데, 이 디렉토리를 도중에 열어놓으면 크롤링 결과가 저장되지 않는다.
 - 광고 내용으로 인해, 전체 채용 정보가 100개여도, 광고 내용을 포함한 120개가 크롤링 될 수 있습니다.
 - 크롤링 할 전체 페이지가, 사용자 컴퓨터의 스레드 개수보다 적다면, 1개의 단일 스레드만 이용합니다. 즉 한개의 브라우저만 띄웁니다.
-
-## PPT
-[PPT 링크, view raw 클릭](https://github.com/minseojo/job-informaton-crawling/blob/main/programmersJobInformation/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%EB%B0%9C%ED%91%9C.ppt)
-
-PPT 마지막 슬라이드에 실제 사용 영상이 있다.
